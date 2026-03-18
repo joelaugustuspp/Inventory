@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventory Management System | Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-shell">
+      <section class="auth-card material-card">
+        <div>
+          <span class="brand-chip">Inventory Management</span>
+          <h1>Sign in</h1>
+          <p class="subtitle">Use the seeded credentials below to explore admin and viewer experiences.</p>
+        </div>
+
+        <div id="message" class="alert hidden" role="alert"></div>
+
+        <form id="login-form" class="stack-lg">
+          <label class="input-group">
+            <span>Username</span>
+            <input type="text" id="username" name="username" autocomplete="username" required />
+          </label>
+
+          <label class="input-group">
+            <span>Password</span>
+            <input type="password" id="password" name="password" autocomplete="current-password" required />
+          </label>
+
+          <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+
+        <div class="demo-credentials">
+          <h2>Demo accounts</h2>
+          <div class="credential-list">
+            <article>
+              <strong>Admin</strong>
+              <p><code>admin</code> / <code>admin123</code></p>
+            </article>
+            <article>
+              <strong>Viewer</strong>
+              <p><code>viewer</code> / <code>viewer123</code></p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/js/login.js"></script>
+  </body>
+</html>
