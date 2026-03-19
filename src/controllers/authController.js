@@ -11,7 +11,7 @@ async function login(req, res) {
 
   const user = userModel.findByUsername(username);
 
-  if (!user) {
+  if (!user || user.status !== 'active') {
     return res.status(401).json({ message: 'Invalid username or password.' });
   }
 
@@ -24,7 +24,8 @@ async function login(req, res) {
   req.session.user = {
     id: user.id,
     username: user.username,
-    role: user.role
+    role: user.role,
+    status: user.status
   };
 
   return res.json({

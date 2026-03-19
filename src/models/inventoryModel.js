@@ -1,37 +1,30 @@
 const db = require('../config/database');
 const { toIsoTimestamp } = require('../utils/date');
+const masterDataModel = require('./masterDataModel');
 
-function buildFilters({ search, status, category }) {
+function buildFilters({ search }) {
   const conditions = [];
   const params = {};
 
   if (search) {
-    conditions.push('(item_name LIKE @search OR category LIKE @search OR CAST(id AS TEXT) LIKE @search)');
-    params.search = `%${search}%`;
-  }
-
-  if (status) {
-    conditions.push('status = @status');
-    params.status = status;
-  }
-
-  if (category) {
-    conditions.push('category = @category');
-    params.category = category;
+    conditions.push('LOWER(inventory_items.item_name) LIKE LOWER(@search)');
+    params.search = `%${search.trim()}%`;
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   return { whereClause, params };
 }
 
-function listItems({ search, status, category, page = 1, pageSize = 10 }) {
+function listItems({ search, page = 1, pageSize = 10 }) {
   const safePage = Math.max(Number(page) || 1, 1);
   const safePageSize = Math.min(Math.max(Number(pageSize) || 10, 1), 50);
   const offset = (safePage - 1) * safePageSize;
-  const { whereClause, params } = buildFilters({ search, status, category });
+  const { whereClause, params } = buildFilters({ search });
 
   const items = db.prepare(`
-    SELECT inventory_items.*, users.username AS updated_by_username
+    SELECT
+      inventory_items.*,
+      users.username AS updated_by_username
     FROM inventory_items
     LEFT JOIN users ON users.id = inventory_items.updated_by
     ${whereClause}
@@ -61,10 +54,6 @@ function getItemById(id) {
   `).get(id);
 }
 
-function getCategories() {
-  return db.prepare('SELECT DISTINCT category FROM inventory_items ORDER BY category ASC').all();
-}
-
 function getSummary() {
   return db.prepare(`
     SELECT
@@ -88,19 +77,21 @@ function getRecentAuditLogs(limit = 8) {
 
 function validateInventoryPayload(payload) {
   const errors = [];
-  const itemName = String(payload.itemName || '').trim();
-  const category = String(payload.category || '').trim();
+  const itemMasterId = Number(payload.itemMasterId);
+  const categoryMasterId = Number(payload.categoryMasterId);
   const quantity = Number(payload.quantity);
   const price = Number(payload.price);
   const status = String(payload.status || '').trim();
   const allowedStatuses = ['in stock', 'low stock', 'out of stock'];
+  const itemMaster = Number.isInteger(itemMasterId) ? masterDataModel.findItemById(itemMasterId) : null;
+  const categoryMaster = Number.isInteger(categoryMasterId) ? masterDataModel.findCategoryById(categoryMasterId) : null;
 
-  if (!itemName || itemName.length < 2) {
-    errors.push('Item name must be at least 2 characters long.');
+  if (!itemMaster) {
+    errors.push('Please select a valid item.');
   }
 
-  if (!category || category.length < 2) {
-    errors.push('Category must be at least 2 characters long.');
+  if (!categoryMaster) {
+    errors.push('Please select a valid category.');
   }
 
   if (!Number.isInteger(quantity) || quantity < 0) {
@@ -118,8 +109,10 @@ function validateInventoryPayload(payload) {
   return {
     errors,
     data: {
-      item_name: itemName,
-      category,
+      item_master_id: itemMaster?.id || null,
+      category_master_id: categoryMaster?.id || null,
+      item_name: itemMaster?.name || '',
+      category: categoryMaster?.name || '',
       quantity,
       price: Number(price.toFixed(2)),
       status
@@ -130,8 +123,12 @@ function validateInventoryPayload(payload) {
 function createItem(payload, actor) {
   const now = toIsoTimestamp();
   const insertItem = db.prepare(`
-    INSERT INTO inventory_items (item_name, category, quantity, price, status, updated_by, last_updated)
-    VALUES (@item_name, @category, @quantity, @price, @status, @updated_by, @last_updated)
+    INSERT INTO inventory_items (
+      item_name, category, item_master_id, category_master_id, quantity, price, status, updated_by, last_updated
+    )
+    VALUES (
+      @item_name, @category, @item_master_id, @category_master_id, @quantity, @price, @status, @updated_by, @last_updated
+    )
   `);
 
   const insertLog = db.prepare(`
@@ -168,6 +165,8 @@ function updateItem(id, payload, actor) {
     UPDATE inventory_items
     SET item_name = @item_name,
         category = @category,
+        item_master_id = @item_master_id,
+        category_master_id = @category_master_id,
         quantity = @quantity,
         price = @price,
         status = @status,
@@ -232,7 +231,6 @@ function deleteItem(id, actor) {
 module.exports = {
   listItems,
   getItemById,
-  getCategories,
   getSummary,
   getRecentAuditLogs,
   validateInventoryPayload,

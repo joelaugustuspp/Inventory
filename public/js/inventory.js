@@ -4,10 +4,12 @@ const state = {
   page: 1,
   pageSize: 5,
   totalPages: 1,
+  masterData: {
+    items: [],
+    categories: []
+  },
   filters: {
-    search: '',
-    status: '',
-    category: ''
+    search: ''
   }
 };
 
@@ -19,10 +21,8 @@ const inventoryMessage = document.getElementById('inventory-message');
 const inventoryTableBody = document.getElementById('inventory-table-body');
 const addItemBtn = document.getElementById('add-item-btn');
 const actionsHeader = document.getElementById('actions-header');
-const auditLog = document.getElementById('audit-log');
+const adminNavLink = document.getElementById('admin-nav-link');
 const searchInput = document.getElementById('search-input');
-const statusFilter = document.getElementById('status-filter');
-const categoryFilter = document.getElementById('category-filter');
 const prevPageBtn = document.getElementById('prev-page');
 const nextPageBtn = document.getElementById('next-page');
 const paginationText = document.getElementById('pagination-text');
@@ -32,6 +32,8 @@ const itemForm = document.getElementById('item-form');
 const formMessage = document.getElementById('form-message');
 const closeDialogBtn = document.getElementById('close-dialog');
 const cancelDialogBtn = document.getElementById('cancel-dialog');
+const itemMasterSelect = document.getElementById('item-master');
+const categoryMasterSelect = document.getElementById('category-master');
 
 function showBanner(target, message, type = 'error') {
   target.textContent = message;
@@ -63,22 +65,18 @@ function formatCurrency(value) {
   }).format(value);
 }
 
-function formatDate(value) {
-  return new Date(value).toLocaleString();
-}
-
 function renderSummary(summary) {
   const cards = [
-    { label: 'Total SKUs', value: summary.totalItems ?? 0 },
-    { label: 'Low Stock', value: summary.lowStock ?? 0 },
-    { label: 'Out of Stock', value: summary.outOfStock ?? 0 },
-    { label: 'Units on Hand', value: summary.totalUnits ?? 0 }
+    { label: 'Total SKUs', value: summary.totalItems ?? 0, tone: '' },
+    { label: 'Low Stock', value: summary.lowStock ?? 0, tone: 'summary-card-warning' },
+    { label: 'Out of Stock', value: summary.outOfStock ?? 0, tone: 'summary-card-danger' },
+    { label: 'Units on Hand', value: summary.totalUnits ?? 0, tone: '' }
   ];
 
   summaryGrid.innerHTML = cards
     .map(
       (card) => `
-        <article class="summary-card material-card">
+        <article class="summary-card material-card ${card.tone}">
           <p class="subtitle">${card.label}</p>
           <p class="summary-value">${card.value}</p>
         </article>
@@ -87,45 +85,34 @@ function renderSummary(summary) {
     .join('');
 }
 
-function renderCategories(categories) {
-  categoryFilter.innerHTML = '<option value="">All categories</option>';
-  categories.forEach((category) => {
-    const option = document.createElement('option');
-    option.value = category;
-    option.textContent = category;
-    if (category === state.filters.category) {
-      option.selected = true;
+function renderSelectOptions(selectElement, options, placeholder, selectedValue = '') {
+  const normalizedSelectedValue = selectedValue ? String(selectedValue) : '';
+  selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+
+  options.forEach((option) => {
+    const node = document.createElement('option');
+    node.value = String(option.id);
+    node.textContent = option.name;
+    if (node.value === normalizedSelectedValue) {
+      node.selected = true;
     }
-    categoryFilter.appendChild(option);
+    selectElement.appendChild(node);
   });
 }
 
-function renderAuditLogs(logs) {
-  if (!logs.length) {
-    auditLog.innerHTML = '<p class="subtitle">No audit activity available yet.</p>';
-    return;
-  }
-
-  auditLog.innerHTML = logs
-    .map(
-      (log) => `
-        <article class="audit-item">
-          <strong>${escapeHtml(log.actor_username)}</strong>
-          <p>${escapeHtml(log.action)} • ${escapeHtml(log.item_name || 'Deleted item')}</p>
-          <p class="subtitle">${escapeHtml(log.details || '')}</p>
-          <p class="subtitle">${formatDate(log.created_at)}</p>
-        </article>
-      `
-    )
-    .join('');
+function renderMasterData(masterData) {
+  state.masterData.items = masterData.items || [];
+  state.masterData.categories = masterData.categories || [];
+  renderSelectOptions(itemMasterSelect, state.masterData.items, 'Select an item');
+  renderSelectOptions(categoryMasterSelect, state.masterData.categories, 'Select a category');
 }
 
 function openItemDialog(item = null) {
   clearBanner(formMessage);
   dialogTitle.textContent = item ? 'Edit item' : 'Add item';
   document.getElementById('item-id').value = item?.id || '';
-  document.getElementById('item-name').value = item?.item_name || '';
-  document.getElementById('item-category').value = item?.category || '';
+  renderSelectOptions(itemMasterSelect, state.masterData.items, 'Select an item', item?.item_master_id);
+  renderSelectOptions(categoryMasterSelect, state.masterData.categories, 'Select a category', item?.category_master_id);
   document.getElementById('item-quantity').value = item?.quantity ?? 0;
   document.getElementById('item-price').value = item?.price ?? '0.00';
   document.getElementById('item-status').value = item?.status || 'in stock';
@@ -138,8 +125,8 @@ function closeItemDialog() {
 
 function renderTable(items) {
   if (!items.length) {
-    const columnCount = state.role === 'admin' ? 9 : 8;
-    inventoryTableBody.innerHTML = `<tr><td colspan="${columnCount}" class="subtitle">No inventory items match your filters.</td></tr>`;
+    const columnCount = state.role === 'admin' ? 7 : 6;
+    inventoryTableBody.innerHTML = `<tr><td colspan="${columnCount}" class="subtitle">No inventory items match your search.</td></tr>`;
     return;
   }
 
@@ -149,7 +136,18 @@ function renderTable(items) {
         ? `
           <td>
             <div class="table-actions">
-              <button class="btn btn-secondary" data-action="edit" data-id="${item.id}">Edit</button>
+              <button
+                class="btn btn-secondary"
+                data-action="edit"
+                data-id="${item.id}"
+                data-item-master-id="${item.item_master_id || ''}"
+                data-category-master-id="${item.category_master_id || ''}"
+                data-quantity="${item.quantity}"
+                data-price="${item.price}"
+                data-status="${escapeHtml(item.status)}"
+              >
+                Edit
+              </button>
               <button class="btn btn-secondary" data-action="delete" data-id="${item.id}">Delete</button>
             </div>
           </td>
@@ -164,8 +162,6 @@ function renderTable(items) {
           <td>${item.quantity}</td>
           <td>${formatCurrency(item.price)}</td>
           <td><span class="status-pill ${statusClass(item.status)}">${escapeHtml(item.status)}</span></td>
-          <td>${formatDate(item.last_updated)}</td>
-          <td>${escapeHtml(item.updated_by_username || 'System')}</td>
           ${adminActions}
         </tr>
       `;
@@ -180,6 +176,10 @@ async function fetchJson(url, options = {}) {
   if (response.status === 401) {
     window.location.href = '/';
     throw new Error('Authentication required');
+  }
+
+  if (response.status === 403) {
+    throw new Error(payload.message || 'You are not authorized to perform this action.');
   }
 
   if (!response.ok) {
@@ -205,6 +205,7 @@ async function loadCurrentUser() {
   if (state.role === 'admin') {
     addItemBtn.classList.remove('hidden');
     actionsHeader.classList.remove('hidden');
+    adminNavLink.classList.remove('hidden');
   }
 }
 
@@ -224,8 +225,7 @@ async function loadInventory() {
   try {
     const payload = await fetchJson(`/api/inventory?${params.toString()}`);
     renderSummary(payload.summary);
-    renderCategories(payload.categories);
-    renderAuditLogs(payload.auditLogs);
+    renderMasterData(payload.masterData || { items: [], categories: [] });
     renderTable(payload.items);
     state.totalPages = payload.pagination.totalPages;
     paginationText.textContent = `Page ${payload.pagination.page} of ${payload.pagination.totalPages} • ${payload.pagination.total} item(s)`;
@@ -257,7 +257,6 @@ inventoryTableBody.addEventListener('click', async (event) => {
   }
 
   const itemId = target.dataset.id;
-  const row = target.closest('tr');
 
   if (target.dataset.action === 'delete') {
     handleDelete(itemId);
@@ -265,22 +264,21 @@ inventoryTableBody.addEventListener('click', async (event) => {
   }
 
   if (target.dataset.action === 'edit') {
-    const cells = row.querySelectorAll('td');
     openItemDialog({
       id: Number(itemId),
-      item_name: cells[1].textContent.trim(),
-      category: cells[2].textContent.trim(),
-      quantity: Number(cells[3].textContent.trim()),
-      price: Number(cells[4].textContent.replace(/[^0-9.-]+/g, '')),
-      status: cells[5].textContent.trim().toLowerCase()
+      item_master_id: target.dataset.itemMasterId,
+      category_master_id: target.dataset.categoryMasterId,
+      quantity: Number(target.dataset.quantity),
+      price: Number(target.dataset.price),
+      status: target.dataset.status
     });
   }
 });
 
 function validateForm(payload) {
   const errors = [];
-  if (payload.itemName.trim().length < 2) errors.push('Item name must be at least 2 characters.');
-  if (payload.category.trim().length < 2) errors.push('Category must be at least 2 characters.');
+  if (!payload.itemMasterId) errors.push('Please select an item.');
+  if (!payload.categoryMasterId) errors.push('Please select a category.');
   if (!Number.isInteger(Number(payload.quantity)) || Number(payload.quantity) < 0) errors.push('Quantity must be a whole number 0 or greater.');
   if (Number.isNaN(Number(payload.price)) || Number(payload.price) < 0) errors.push('Price must be 0 or greater.');
   if (!['in stock', 'low stock', 'out of stock'].includes(payload.status)) errors.push('Status is invalid.');
@@ -290,8 +288,8 @@ function validateForm(payload) {
 itemForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   const payload = {
-    itemName: document.getElementById('item-name').value.trim(),
-    category: document.getElementById('item-category').value.trim(),
+    itemMasterId: itemMasterSelect.value,
+    categoryMasterId: categoryMasterSelect.value,
     quantity: document.getElementById('item-quantity').value,
     price: document.getElementById('item-price').value,
     status: document.getElementById('item-status').value
@@ -329,16 +327,6 @@ closeDialogBtn.addEventListener('click', closeItemDialog);
 cancelDialogBtn.addEventListener('click', closeItemDialog);
 searchInput.addEventListener('input', (event) => {
   state.filters.search = event.target.value.trim();
-  state.page = 1;
-  loadInventory();
-});
-statusFilter.addEventListener('change', (event) => {
-  state.filters.status = event.target.value;
-  state.page = 1;
-  loadInventory();
-});
-categoryFilter.addEventListener('change', (event) => {
-  state.filters.category = event.target.value;
   state.page = 1;
   loadInventory();
 });

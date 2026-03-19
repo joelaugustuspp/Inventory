@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventory Management System | Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header class="topbar material-card">
+      <div class="topbar-content">
+        <div>
+          <p class="eyebrow">Inventory Management</p>
+          <h1>Admin</h1>
+        </div>
+        <nav class="page-nav" aria-label="Primary">
+          <a href="/app" class="nav-link">Inventory</a>
+          <a href="/admin" class="nav-link nav-link-active">Admin</a>
+        </nav>
+      </div>
+      <div class="topbar-actions">
+        <div>
+          <p id="current-user" class="user-name"></p>
+          <p id="current-role" class="user-role"></p>
+        </div>
+        <button id="logout-btn" class="btn btn-secondary">
+          <span class="material-symbols-outlined">logout</span>
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <main class="page-shell container stack-xl">
+      <section class="material-card section card-spacing stack-lg">
+        <div class="section-header">
+          <div>
+            <h2>Administration</h2>
+            <p class="subtitle">Manage users and the master data that powers inventory dropdowns.</p>
+          </div>
+        </div>
+
+        <div id="admin-message" class="alert hidden" role="alert"></div>
+
+        <div class="tab-bar" role="tablist" aria-label="Admin sections">
+          <button type="button" class="tab-btn tab-btn-active" data-tab="users" aria-selected="true">
+            User Management
+          </button>
+          <button type="button" class="tab-btn" data-tab="master-data" aria-selected="false">
+            Master Data
+          </button>
+        </div>
+
+        <section id="tab-users" class="tab-panel stack-lg">
+          <div class="admin-grid">
+            <article class="material-card card-spacing stack-md">
+              <div>
+                <h3 id="user-form-title">Add user</h3>
+                <p class="subtitle">Create new admins or viewers and manage account status safely.</p>
+              </div>
+              <div id="user-message" class="alert hidden" role="alert"></div>
+              <form id="user-form" class="stack-md">
+                <input type="hidden" id="user-id" />
+
+                <label class="input-group form-group">
+                  <span>Username</span>
+                  <input type="text" id="user-username" minlength="3" required />
+                </label>
+
+                <label class="input-group form-group">
+                  <span>Password</span>
+                  <input type="password" id="user-password" minlength="6" />
+                </label>
+
+                <div class="form-grid">
+                  <label class="input-group">
+                    <span>Role</span>
+                    <select id="user-role" required>
+                      <option value="admin">Admin</option>
+                      <option value="viewer">Viewer</option>
+                    </select>
+                  </label>
+
+                  <label class="input-group">
+                    <span>Status</span>
+                    <select id="user-status" required>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="dialog-actions">
+                  <button type="button" id="user-reset-btn" class="btn btn-secondary">Reset</button>
+                  <button type="submit" class="btn btn-primary">Save User</button>
+                </div>
+              </form>
+            </article>
+
+            <article class="material-card card-spacing stack-md">
+              <div>
+                <h3>Users</h3>
+                <p class="subtitle">Viewer access remains view-only and inactive users cannot sign in.</p>
+              </div>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-table-body"></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="tab-master-data" class="tab-panel stack-lg hidden">
+          <div class="admin-grid">
+            <article class="material-card card-spacing stack-md">
+              <div>
+                <h3 id="item-master-form-title">Add item</h3>
+                <p class="subtitle">These values appear in the inventory item dropdown.</p>
+              </div>
+              <div id="item-master-message" class="alert hidden" role="alert"></div>
+              <form id="item-master-form" class="stack-md">
+                <input type="hidden" id="item-master-id" />
+                <label class="input-group form-group">
+                  <span>Item</span>
+                  <input type="text" id="item-master-name" minlength="2" required />
+                </label>
+                <div class="dialog-actions">
+                  <button type="button" id="item-master-reset-btn" class="btn btn-secondary">Reset</button>
+                  <button type="submit" class="btn btn-primary">Save Item</button>
+                </div>
+              </form>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="item-master-table-body"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="material-card card-spacing stack-md">
+              <div>
+                <h3 id="category-master-form-title">Add category</h3>
+                <p class="subtitle">These values appear in the inventory category dropdown.</p>
+              </div>
+              <div id="category-master-message" class="alert hidden" role="alert"></div>
+              <form id="category-master-form" class="stack-md">
+                <input type="hidden" id="category-master-id" />
+                <label class="input-group form-group">
+                  <span>Category</span>
+                  <input type="text" id="category-master-name" minlength="2" required />
+                </label>
+                <div class="dialog-actions">
+                  <button type="button" id="category-master-reset-btn" class="btn btn-secondary">Reset</button>
+                  <button type="submit" class="btn btn-primary">Save Category</button>
+                </div>
+              </form>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="category-master-table-body"></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/js/admin.js"></script>
+  </body>
+</html>

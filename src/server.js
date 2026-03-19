@@ -3,9 +3,10 @@ const express = require('express');
 const session = require('express-session');
 const SQLiteStoreFactory = require('connect-sqlite3');
 const { initializeDatabase } = require('./models/schema');
-const { ensureAuthenticated } = require('./middleware/authMiddleware');
+const { ensureAuthenticated, ensureRole } = require('./middleware/authMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const env = require('./config/env');
 
 const SQLiteStore = SQLiteStoreFactory(session);
@@ -36,15 +37,21 @@ app.use(
 
 app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
-app.use(express.static(path.join(process.cwd(), 'public')));
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.get('/app', ensureAuthenticated, (_req, res) => {
+app.get(['/app', '/inventory.html'], ensureAuthenticated, (_req, res) => {
   res.sendFile(path.join(process.cwd(), 'public', 'inventory.html'));
 });
+
+app.get(['/admin', '/admin.html'], ensureRole(['admin']), (_req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'admin.html'));
+});
+
+app.use(express.static(path.join(process.cwd(), 'public')));
 
 app.get('*', (_req, res) => {
   res.sendFile(path.join(process.cwd(), 'public', 'index.html'));

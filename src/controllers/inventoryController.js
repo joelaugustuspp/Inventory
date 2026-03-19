@@ -1,10 +1,9 @@
 const inventoryModel = require('../models/inventoryModel');
+const masterDataModel = require('../models/masterDataModel');
 
 function getInventory(req, res) {
   const data = inventoryModel.listItems({
     search: req.query.search,
-    status: req.query.status,
-    category: req.query.category,
     page: req.query.page,
     pageSize: req.query.pageSize
   });
@@ -12,8 +11,10 @@ function getInventory(req, res) {
   return res.json({
     ...data,
     summary: inventoryModel.getSummary(),
-    categories: inventoryModel.getCategories().map((entry) => entry.category),
-    auditLogs: inventoryModel.getRecentAuditLogs()
+    masterData: {
+      items: masterDataModel.listItemMasters(),
+      categories: masterDataModel.listCategoryMasters()
+    }
   });
 }
 

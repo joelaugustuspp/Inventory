@@ -14,9 +14,15 @@
   </head>
   <body>
     <header class="topbar material-card">
-      <div>
-        <p class="eyebrow">Inventory Management</p>
-        <h1>Dashboard</h1>
+      <div class="topbar-content">
+        <div>
+          <p class="eyebrow">Inventory Management</p>
+          <h1>Dashboard</h1>
+        </div>
+        <nav class="page-nav" aria-label="Primary">
+          <a href="/app" class="nav-link nav-link-active">Inventory</a>
+          <a href="/admin" id="admin-nav-link" class="nav-link hidden">Admin</a>
+        </nav>
       </div>
       <div class="topbar-actions">
         <div>
@@ -30,14 +36,14 @@
       </div>
     </header>
 
-    <main class="page-shell stack-xl">
-      <section class="summary-grid" id="summary-grid"></section>
+    <main class="page-shell container stack-xl">
+      <section class="summary-grid section" id="summary-grid"></section>
 
-      <section class="material-card stack-lg">
+      <section class="material-card section card-spacing stack-lg">
         <div class="section-header">
           <div>
             <h2>Inventory</h2>
-            <p class="subtitle">Search, filter, and manage your inventory items.</p>
+            <p class="subtitle">Search by item name and manage your inventory items.</p>
           </div>
           <button id="add-item-btn" class="btn btn-primary hidden">
             <span class="material-symbols-outlined">add_circle</span>
@@ -47,27 +53,10 @@
 
         <div id="inventory-message" class="alert hidden" role="alert"></div>
 
-        <div class="toolbar">
-          <label class="input-group compact">
-            <span>Search</span>
-            <input type="search" id="search-input" placeholder="Search name, category, or id" />
-          </label>
-
-          <label class="input-group compact">
-            <span>Status</span>
-            <select id="status-filter">
-              <option value="">All statuses</option>
-              <option value="in stock">In stock</option>
-              <option value="low stock">Low stock</option>
-              <option value="out of stock">Out of stock</option>
-            </select>
-          </label>
-
-          <label class="input-group compact">
-            <span>Category</span>
-            <select id="category-filter">
-              <option value="">All categories</option>
-            </select>
+        <div class="toolbar section">
+          <label class="input-group compact form-group search-group">
+            <span>Search by item name</span>
+            <input type="search" id="search-input" placeholder="Enter an item name" />
           </label>
         </div>
 
@@ -81,8 +70,6 @@
                 <th>Qty</th>
                 <th>Price</th>
                 <th>Status</th>
-                <th>Updated</th>
-                <th>Updated By</th>
                 <th id="actions-header" class="hidden">Actions</th>
               </tr>
             </thead>
@@ -95,16 +82,6 @@
           <p id="pagination-text"></p>
           <button id="next-page" class="btn btn-secondary">Next</button>
         </div>
-      </section>
-
-      <section class="material-card stack-md">
-        <div class="section-header">
-          <div>
-            <h2>Recent activity</h2>
-            <p class="subtitle">Basic audit log showing who updated inventory most recently.</p>
-          </div>
-        </div>
-        <div id="audit-log" class="audit-list"></div>
       </section>
     </main>
 
@@ -123,13 +100,13 @@
 
         <div class="form-grid">
           <label class="input-group">
-            <span>Item name</span>
-            <input type="text" id="item-name" required minlength="2" />
+            <span>Item</span>
+            <select id="item-master" required></select>
           </label>
 
           <label class="input-group">
             <span>Category</span>
-            <input type="text" id="item-category" required minlength="2" />
+            <select id="category-master" required></select>
           </label>
 
           <label class="input-group">
